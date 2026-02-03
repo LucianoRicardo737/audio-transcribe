@@ -1,0 +1,22 @@
+# Audio capture
+sounddevice>=0.4.6
+scipy>=1.10.0
+numpy>=1.24.0
+
+# Hotkey detection (global)
+pynput>=1.7.6
+
+# Groq API
+httpx>=0.27.0
+
+# Whisper fallback (local)
+openai-whisper>=20231117
+
+# CLI utilities
+python-dotenv>=1.0.0
+rich>=13.0.0
+pyperclip>=1.8.2
+
+# GUI (Qt-based floating button)
+PySide6>=6.5.0
+qtawesome>=1.3.0
