@@ -19,11 +19,12 @@ class AudioRecorder:
 
     def __init__(self, sample_rate: int = SAMPLE_RATE, channels: int = CHANNELS):
         self.target_sample_rate = sample_rate  # Para output final
-        self.sample_rate = sample_rate  # Puede cambiar segun dispositivo
+        self.sample_rate = sample_rate  # Puede cambiar según dispositivo
         self.channels = channels
         self.device_id = None
         self.recording_data = []
         self.is_recording = False
+        self.is_paused = False
         self.stream = None
         self._lock = threading.Lock()
 
@@ -117,7 +118,7 @@ class AudioRecorder:
         def audio_callback(indata, frames, time, status):
             if status:
                 console.print(f"[yellow]Audio status: {status}[/yellow]")
-            if self.is_recording:
+            if self.is_recording and not self.is_paused:
                 self.recording_data.append(indata.copy())
 
         try:
@@ -182,3 +183,36 @@ class AudioRecorder:
     def get_recording_status(self) -> bool:
         """Check if currently recording."""
         return self.is_recording
+
+    def pause_recording(self) -> bool:
+        """Pause the current recording."""
+        with self._lock:
+            if not self.is_recording or self.is_paused:
+                return False
+            self.is_paused = True
+            return True
+
+    def resume_recording(self) -> bool:
+        """Resume a paused recording."""
+        with self._lock:
+            if not self.is_recording or not self.is_paused:
+                return False
+            self.is_paused = False
+            return True
+
+    def cancel_recording(self):
+        """Cancel the current recording without saving."""
+        with self._lock:
+            self.is_recording = False
+            self.is_paused = False
+
+        if self.stream:
+            self.stream.stop()
+            self.stream.close()
+            self.stream = None
+
+        self.recording_data = []
+
+    def is_paused_status(self) -> bool:
+        """Check if currently paused."""
+        return self.is_paused
