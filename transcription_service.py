@@ -21,6 +21,7 @@ class TranscriptionService:
 
     def __init__(self):
         self.whisper_model = None  # Lazy loaded
+        self.language = LANGUAGE  # Can be changed at runtime
 
     def transcribe_with_groq(self, audio_path: str) -> str:
         """
@@ -44,7 +45,7 @@ class TranscriptionService:
                     },
                     data={
                         "model": GROQ_MODEL,
-                        "language": LANGUAGE,
+                        "language": self.language,
                         "response_format": "text"
                     },
                     timeout=60.0
@@ -92,7 +93,7 @@ class TranscriptionService:
 
             result = self.whisper_model.transcribe(
                 audio_path,
-                language=LANGUAGE,
+                language=self.language,
                 task="transcribe"
             )
 

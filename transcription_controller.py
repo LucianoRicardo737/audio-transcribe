@@ -11,13 +11,14 @@ from enum import Enum, auto
 
 from audio_recorder import AudioRecorder
 from transcription_service import TranscriptionService
-from config import COPY_TO_CLIPBOARD
+from config import COPY_TO_CLIPBOARD, LANGUAGE
 
 
 class TranscriptionState(Enum):
     """States for the transcription process."""
     IDLE = auto()
     RECORDING = auto()
+    PAUSED = auto()
     PROCESSING = auto()
     ERROR = auto()
 
@@ -151,7 +152,7 @@ class TranscriptionController:
             True if stop was initiated successfully
         """
         with self._lock:
-            if self._state != TranscriptionState.RECORDING:
+            if self._state not in (TranscriptionState.RECORDING, TranscriptionState.PAUSED):
                 return False
 
             self.state = TranscriptionState.PROCESSING
@@ -235,3 +236,79 @@ class TranscriptionController:
     def is_idle(self) -> bool:
         """Check if idle and ready."""
         return self._state == TranscriptionState.IDLE
+
+    def is_paused(self) -> bool:
+        """Check if recording is paused."""
+        return self._state == TranscriptionState.PAUSED
+
+    def pause_recording(self) -> bool:
+        """
+        Pause the current recording.
+
+        Returns:
+            True if paused successfully
+        """
+        with self._lock:
+            if self._state != TranscriptionState.RECORDING:
+                return False
+
+            if self.recorder.pause_recording():
+                self.state = TranscriptionState.PAUSED
+                self._emit_status("Pausado")
+                return True
+            return False
+
+    def resume_recording(self) -> bool:
+        """
+        Resume a paused recording.
+
+        Returns:
+            True if resumed successfully
+        """
+        with self._lock:
+            if self._state != TranscriptionState.PAUSED:
+                return False
+
+            if self.recorder.resume_recording():
+                self.state = TranscriptionState.RECORDING
+                self._emit_status("Grabando...")
+                return True
+            return False
+
+    def cancel_recording(self) -> bool:
+        """
+        Cancel the current recording without processing.
+
+        Returns:
+            True if cancelled successfully
+        """
+        with self._lock:
+            if self._state not in (TranscriptionState.RECORDING, TranscriptionState.PAUSED):
+                return False
+
+            self.recorder.cancel_recording()
+            self.state = TranscriptionState.IDLE
+            self._emit_status("Cancelado")
+            return True
+
+    def toggle_pause(self) -> bool:
+        """
+        Toggle between recording and paused states.
+
+        Returns:
+            True if action was taken
+        """
+        if self._state == TranscriptionState.RECORDING:
+            return self.pause_recording()
+        elif self._state == TranscriptionState.PAUSED:
+            return self.resume_recording()
+        return False
+
+    def get_language(self) -> str:
+        """Get current transcription language."""
+        return self.transcriber.language
+
+    def set_language(self, language: str):
+        """Set transcription language."""
+        self.transcriber.language = language
+        self._emit_status(f"Idioma: {language}")

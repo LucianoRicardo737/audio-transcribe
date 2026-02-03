@@ -8,7 +8,7 @@ import os
 # Obtener key gratis en: https://console.groq.com/
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_ENDPOINT = "https://api.groq.com/openai/v1/audio/transcriptions"
-GROQ_MODEL = "whisper-large-v3-turbo"
+GROQ_MODEL = "whisper-large-v3"
 
 # Language for transcription
 LANGUAGE = os.getenv("TRANSCRIBE_LANGUAGE", "es")  # Spanish
