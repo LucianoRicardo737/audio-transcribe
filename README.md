@@ -1,155 +1,175 @@
 # Audio Transcribe
 
-Herramienta de transcripcion de voz a texto con **boton flotante** (GUI) o **hotkey global** (CLI). Usa **Groq API** (gratis y rapido) como servicio principal y **Whisper local** como fallback.
+Voice-to-text transcription tool with **floating panel** (GUI) or **global hotkey** (CLI). Uses **Groq API** (free and fast) as primary service and **local Whisper** as fallback.
 
-## Modos de Uso
+---
 
-### GUI (Por defecto) - Boton Flotante
-- Boton circular transparente siempre visible
-- Click para grabar/detener
-- Arrastrable a cualquier posicion
-- Click derecho para menu de opciones
+Herramienta de transcripcion de voz a texto con **panel flotante** (GUI) o **hotkey global** (CLI). Usa **Groq API** (gratis y rapido) como servicio principal y **Whisper local** como fallback.
 
-### CLI - Hotkey Global
-- `Ctrl+Alt+Space` funciona en cualquier ventana
-- Interfaz de terminal con Rich
+## Features / Caracteristicas
 
-## Caracteristicas
-
-- **Boton Flotante**: Circular, transparente, always-on-top (PySide6)
-- **Iconos Modernos**: Material Design via QtAwesome
-- **Groq API**: Transcripcion rapida y gratuita en la nube
-- **Whisper Local**: Fallback automatico si Groq falla
-- **Seleccion de Microfono**: Elige tu dispositivo de entrada
-- **Clipboard Automatico**: El texto transcrito se copia automaticamente
-- **Multi-idioma**: Configurable (default: Espanol)
+- **Floating Panel**: Vertical panel with Record, Pause, Cancel buttons (PySide6)
+- **Modern Icons**: Material Design via QtAwesome
+- **Bilingual Interface**: Spanish / English with persistent settings
+- **Pause/Resume**: Pause recording and continue later
+- **Cancel Recording**: Discard without transcribing
+- **Groq API**: Fast, free cloud transcription (Whisper Large V3)
+- **Whisper Fallback**: Automatic local fallback if Groq fails
+- **Microphone Selection**: Choose your input device
+- **Auto Clipboard**: Transcribed text copied automatically
+- **Draggable**: Move panel anywhere on screen
 - **Cross-platform**: Linux, Windows, macOS
 
-## Requisitos
+## Panel Layout
+
+```
+┌──────────────┐
+│      🎤      │  Record/Stop (green/red)
+├──────────────┤
+│      ⏸️      │  Pause/Resume (orange/green)
+├──────────────┤
+│      ✕       │  Cancel (gray/red)
+├──────────────┤
+│   ?  ⚙️  ⏻   │  Help | Settings | Exit
+└──────────────┘
+    Dark transparent background
+```
+
+## Button States / Estados
+
+| State | Button | Color | Description |
+|-------|--------|-------|-------------|
+| Ready | Record | Green | Waiting to record |
+| Recording | Stop | Red (pulse) | Recording audio |
+| Paused | Resume | Green (pulse) | Recording paused |
+| Processing | Spinner | Yellow (spin) | Transcribing |
+| Success | Check | Green | Done, copied to clipboard |
+| Error | Alert | Gray | Transcription failed |
+
+## Requirements / Requisitos
 
 - Python 3.10+
-- Cuenta gratuita en [Groq](https://console.groq.com/) para API key
+- Free account at [Groq](https://console.groq.com/) for API key
 
-### Dependencias del Sistema
+### System Dependencies
 
 ```bash
 # Debian/Ubuntu
 sudo apt install python3-venv python3-full libportaudio2 xclip
 
-# Para GUI en algunos sistemas
+# For GUI on some systems
 sudo apt install libxcb-cursor0
 ```
 
-## Instalacion
+## Installation / Instalacion
 
 ```bash
-# Clonar
-git clone https://gitea.softrock.com.ar/corpy/audio-transcribe.git
+# Clone
+git clone https://github.com/luckberonne/audio-transcribe.git
 cd audio-transcribe
 
-# Dar permisos
+# Give permissions
 chmod +x start.sh run.py
 
-# Ejecutar (instala dependencias automaticamente)
+# Run (installs dependencies automatically)
 ./start.sh
 ```
 
-## Configuracion
+## Configuration / Configuracion
 
-### API Key de Groq (Requerido)
+### Groq API Key (Required)
 
-1. Crear cuenta gratuita en [https://console.groq.com/](https://console.groq.com/)
-2. Generar API Key
-3. Configurar:
+1. Create free account at [https://console.groq.com/](https://console.groq.com/)
+2. Generate API Key
+3. Configure:
 
 ```bash
-# Opcion 1: Variable de entorno
-export GROQ_API_KEY="tu-api-key-aqui"
+# Option 1: Environment variable
+export GROQ_API_KEY="your-api-key-here"
 
-# Opcion 2: Agregar a ~/.bashrc (permanente)
-echo 'export GROQ_API_KEY="tu-api-key-aqui"' >> ~/.bashrc
+# Option 2: Add to ~/.bashrc (permanent)
+echo 'export GROQ_API_KEY="your-api-key-here"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-### Variables de Entorno
+### Environment Variables
 
-| Variable | Default | Descripcion |
+| Variable | Default | Description |
 |----------|---------|-------------|
-| `GROQ_API_KEY` | (requerido) | API key de Groq |
-| `TRANSCRIBE_LANGUAGE` | `es` | Idioma (es, en, pt, etc.) |
-| `BUTTON_POSITION` | `bottom-right` | Posicion: top-left, top-right, bottom-left, bottom-right, center |
-| `BUTTON_SIZE` | `50` | Tamano del boton en pixeles |
-| `BUTTON_OPACITY` | `0.9` | Transparencia (0.0 - 1.0) |
-| `TRANSCRIBE_HOTKEY` | `<ctrl>+<alt>+space` | Hotkey (solo modo CLI) |
-| `WHISPER_MODEL` | `small` | Modelo local: tiny, base, small, medium, large |
-| `WHISPER_DEVICE` | `cuda` | Dispositivo: cuda o cpu |
+| `GROQ_API_KEY` | (required) | Groq API key |
+| `BUTTON_POSITION` | `bottom-right` | Position: top-left, top-right, bottom-left, bottom-right, center |
+| `BUTTON_SIZE` | `50` | Button size in pixels |
+| `TRANSCRIBE_HOTKEY` | `<ctrl>+<alt>+space` | Hotkey (CLI mode only) |
+| `WHISPER_MODEL` | `small` | Local model: tiny, base, small, medium, large |
+| `WHISPER_DEVICE` | `cuda` | Device: cuda or cpu |
 
-## Uso
+### Persistent Settings
 
-### Modo GUI (Boton Flotante)
+Language and microphone preferences are saved in `app_settings.json` (created automatically).
+
+Change language via Settings button (gear icon) - changes apply immediately and persist across restarts.
+
+## Usage / Uso
+
+### GUI Mode (Floating Panel)
 
 ```bash
 ./start.sh
-# o
+# or
 ./run.py
 ```
 
-1. Seleccionar microfono en el dialogo inicial
-2. **Click** en el boton verde para iniciar grabacion
-3. Hablar...
-4. **Click** en el boton rojo para detener y transcribir
-5. El texto se copia automaticamente al portapapeles
-6. **Click derecho** para cambiar microfono o salir
-7. **Arrastrar** el boton para moverlo
+1. Select microphone in initial dialog
+2. **Click** green button to start recording
+3. Speak...
+4. (Optional) **Click** orange button to pause/resume
+5. **Click** red stop button to transcribe
+6. Text is copied automatically to clipboard
+7. **Drag** panel to move it
+8. **Click** gear icon for settings (microphone, language)
+9. **Click** ? icon for help
+10. **Click** exit icon to quit
 
-### Modo CLI (Hotkey)
+### CLI Mode (Hotkey)
 
 ```bash
 ./start.sh --cli
 ```
 
-1. Seleccionar microfono de la lista
-2. Presionar `Ctrl+Alt+Space` para iniciar grabacion
-3. Hablar...
-4. Presionar `Ctrl+Alt+Space` para detener y transcribir
-5. El texto aparece en terminal y se copia al portapapeles
+1. Select microphone from list
+2. Press `Ctrl+Alt+Space` to start recording
+3. Speak...
+4. Press `Ctrl+Alt+Space` to stop and transcribe
+5. Text appears in terminal and is copied to clipboard
 
-## Estructura del Proyecto
+## Project Structure / Estructura
 
 ```
 audio-transcribe/
-├── start.sh                  # Script de inicio
-├── run.py                    # Launcher con auto-venv
-├── floating_button_qt.py     # GUI (PySide6)
-├── transcribe.py             # CLI (pynput)
-├── transcription_controller.py # Logica compartida
-├── audio_recorder.py         # Captura de audio
-├── transcription_service.py  # Groq + Whisper
-├── config.py                 # Configuracion
-├── requirements.txt          # Dependencias Python
-├── README.md                 # Este archivo
-└── CLAUDE.md                 # Guia para Claude Code
+├── start.sh                    # Startup script
+├── run.py                      # Launcher with auto-venv
+├── floating_button_qt.py       # GUI (PySide6)
+├── transcribe.py               # CLI (pynput)
+├── transcription_controller.py # Shared logic
+├── audio_recorder.py           # Audio capture
+├── transcription_service.py    # Groq + Whisper
+├── config.py                   # Configuration
+├── settings.py                 # Persistent settings & translations
+├── app_settings.json           # Saved preferences (auto-created)
+├── requirements.txt            # Python dependencies
+├── README.md                   # This file
+└── CLAUDE.md                   # Guide for Claude Code
 ```
 
-## Estados del Boton
+## Whisper Models (Fallback)
 
-| Estado | Color | Icono | Descripcion |
-|--------|-------|-------|-------------|
-| Listo | Verde | Microfono | Esperando para grabar |
-| Grabando | Rojo (pulsa) | Stop | Grabando audio |
-| Procesando | Amarillo (gira) | Loading | Transcribiendo |
-| Exito | Verde | Check | Transcripcion completada |
-| Error | Gris | X | Error en transcripcion |
-
-## Modelos Whisper (Fallback)
-
-| Modelo | VRAM | Velocidad | Precision |
-|--------|------|-----------|-----------a|
-| tiny | ~1GB | Muy rapido | Baja |
-| base | ~1GB | Rapido | Media |
-| **small** | ~2GB | Medio | Buena (default) |
-| medium | ~5GB | Lento | Muy buena |
-| large | ~10GB | Muy lento | Excelente |
+| Model | VRAM | Speed | Accuracy |
+|-------|------|-------|----------|
+| tiny | ~1GB | Very fast | Low |
+| base | ~1GB | Fast | Medium |
+| **small** | ~2GB | Medium | Good (default) |
+| medium | ~5GB | Slow | Very good |
+| large | ~10GB | Very slow | Excellent |
 
 ## Troubleshooting
 
@@ -159,13 +179,13 @@ audio-transcribe/
 sudo apt install libportaudio2
 ```
 
-### Error: No se encontraron microfonos
+### Error: No microphones found
 
 ```bash
-# Verificar PulseAudio/PipeWire
+# Check PulseAudio/PipeWire
 pactl list sources short
 
-# Reiniciar PipeWire
+# Restart PipeWire
 systemctl --user restart pipewire pipewire-pulse
 ```
 
@@ -181,26 +201,26 @@ sudo apt install libxcb-cursor0
 export WHISPER_DEVICE="cpu"
 ```
 
-### Error: pyperclip no funciona
+### Error: pyperclip not working
 
 ```bash
 sudo apt install xclip
 ```
 
-### Microfono USB/Bluetooth no aparece
+### USB/Bluetooth microphone not appearing
 
 ```bash
-# Reiniciar audio
+# Restart audio
 systemctl --user restart pipewire pipewire-pulse
 
-# O desconectar/reconectar USB y verificar
+# Or disconnect/reconnect USB and verify
 arecord -l
 ```
 
-## Licencia
+## License / Licencia
 
 MIT License
 
-## Contribuciones
+## Contributing / Contribuciones
 
-Pull requests son bienvenidos. Para cambios importantes, abre un issue primero.
+Pull requests are welcome. For major changes, please open an issue first.
