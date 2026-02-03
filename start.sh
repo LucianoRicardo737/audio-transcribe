@@ -48,13 +48,40 @@ if [ ! -f ".deps_installed" ]; then
     echo -e "${GREEN}Dependencias instaladas${NC}"
 fi
 
-# 4. Verificar tkinter para GUI
-if [ "$MODE" == "gui" ]; then
-    if ! python3 -c "import tkinter" 2>/dev/null; then
-        echo -e "${YELLOW}tkinter no instalado. Instalando...${NC}"
-        echo -e "${YELLOW}Puede requerir: sudo apt install python3-tk${NC}"
-    fi
+# 4. Verificar y reiniciar audio si es necesario
+echo -e "${CYAN}Verificando dispositivos de audio...${NC}"
+
+# Reiniciar PipeWire para asegurar que detecte dispositivos USB
+if command -v systemctl &> /dev/null; then
+    systemctl --user restart pipewire pipewire-pulse 2>/dev/null || true
+    sleep 1
 fi
+
+# Mostrar dispositivos detectados
+DEVICES=$(./venv/bin/python -c "
+import sounddevice as sd
+devices = sd.query_devices()
+inputs = [d for d in devices if d['max_input_channels'] > 0]
+for d in inputs:
+    idx = devices.index(d) if isinstance(devices, list) else list(devices).index(d)
+    default = ' (default)' if d.get('name') == sd.query_devices(kind='input').get('name') else ''
+    print(f\"  - [{idx}] {d['name'][:50]}{default}\")
+" 2>/dev/null)
+
+if [ -z "$DEVICES" ]; then
+    echo -e "${YELLOW}No se detectaron microfonos. Intentando reiniciar audio...${NC}"
+    systemctl --user restart pipewire pipewire-pulse 2>/dev/null || pulseaudio -k 2>/dev/null && pulseaudio --start 2>/dev/null
+    sleep 2
+fi
+
+echo -e "${GREEN}Dispositivos disponibles:${NC}"
+./venv/bin/python -c "
+import sounddevice as sd
+devices = sd.query_devices()
+for i, d in enumerate(devices):
+    if d['max_input_channels'] > 0:
+        print(f\"  [{i}] {d['name'][:50]}\")
+" 2>/dev/null || echo -e "${YELLOW}  No se pudieron listar dispositivos${NC}"
 
 echo ""
 
