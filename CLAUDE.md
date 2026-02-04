@@ -12,6 +12,7 @@ Uses **Groq API** (free, fast) as primary service and **local Whisper** as fallb
 
 ## Commands
 
+### Linux/macOS
 ```bash
 # Run GUI (floating panel) - default
 ./start.sh
@@ -19,18 +20,45 @@ Uses **Groq API** (free, fast) as primary service and **local Whisper** as fallb
 # Run CLI (hotkey mode)
 ./start.sh --cli
 
-# Manual run
-source venv/bin/activate
-python floating_button.py  # GUI
-python transcribe.py       # CLI
+# Skip audio device verification
+./start.sh --skip-audio-check
 
-# Install dependencies manually
+# Attempt audio system restart (Linux)
+./start.sh --fix-audio
+
+# Manual execution (all platforms)
+python launcher.py          # GUI
+python launcher.py --cli    # CLI
+```
+
+### Windows
+```batch
+# Run GUI (floating panel) - default
+start.bat
+
+# Run CLI (hotkey mode)
+start.bat --cli
+
+# Or use Python directly
+python launcher.py          # GUI
+python launcher.py --cli    # CLI
+```
+
+### Manual setup (if launcher fails)
+```bash
+# Create venv
 python3 -m venv venv
-source venv/bin/activate
+
+# Activate venv
+source venv/bin/activate      # Linux/macOS
+venv\Scripts\activate          # Windows
+
+# Install dependencies
 pip install -r requirements.txt
 
-# Install tkinter (required for GUI, Debian/Ubuntu)
-sudo apt install python3-tk
+# Run directly
+python floating_button_qt.py   # GUI
+python transcribe.py           # CLI
 ```
 
 ## Architecture
@@ -109,11 +137,19 @@ Vertical panel with 3 circular buttons (dark transparent background):
 
 ## Files
 
+**Entry Points**:
+- `launcher.py` - Cross-platform launcher (creates venv, installs deps, checks audio, runs app)
+- `start.sh` - Unix/Linux/macOS wrapper (delegates to launcher.py)
+- `start.bat` - Windows wrapper (delegates to launcher.py)
+
+**Application**:
 - `floating_button_qt.py` - GUI application (PySide6) with floating panel (3 buttons)
 - `transcribe.py` - CLI application with hotkey (pynput)
 - `transcription_controller.py` - Shared orchestration logic
 - `audio_recorder.py` - Audio capture (sounddevice)
 - `transcription_service.py` - Groq/Whisper transcription
-- `config.py` - Configuration
-- `run.py` - Launcher with auto-venv activation
-- `start.sh` - Shell script for setup and execution
+
+**Configuration**:
+- `config.py` - Configuration (constants)
+- `settings.py` - Persistent settings & translations
+- `requirements.txt` - Python dependencies

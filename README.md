@@ -53,13 +53,27 @@ Herramienta de transcripcion de voz a texto con **panel flotante** (GUI) o **hot
 
 ### Dependencias del Sistema
 
+#### Linux (Debian/Ubuntu)
 ```bash
-# Debian/Ubuntu
 sudo apt install python3-venv python3-full libportaudio2 xclip
 
 # Para GUI en algunos sistemas
 sudo apt install libxcb-cursor0
 ```
+
+#### macOS
+```bash
+# Instalar Homebrew si no lo tienes
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Instalar PortAudio
+brew install portaudio
+```
+
+#### Windows
+- Descargar Python desde [python.org](https://www.python.org/downloads/)
+- **Importante**: Marcar la opción "Add Python to PATH" durante la instalación
+- Las demás dependencias se instalan automáticamente
 
 ## Instalacion
 
@@ -68,11 +82,15 @@ sudo apt install libxcb-cursor0
 git clone https://github.com/luckberonne/audio-transcribe.git
 cd audio-transcribe
 
-# Dar permisos
-chmod +x start.sh run.py
+# Dar permisos (solo en Linux/macOS)
+chmod +x start.sh launcher.py
 
 # Ejecutar (instala dependencias automaticamente)
-./start.sh
+./start.sh                    # Linux/macOS (GUI)
+./start.sh --cli             # Linux/macOS (CLI con hotkey)
+start.bat                    # Windows (GUI)
+python launcher.py           # Alternativa cross-platform
+python launcher.py --cli     # Alternativa cross-platform (CLI)
 ```
 
 ## Configuracion
@@ -81,15 +99,37 @@ chmod +x start.sh run.py
 
 1. Crear cuenta gratuita en [https://console.groq.com/](https://console.groq.com/)
 2. Generar API Key
-3. Configurar:
+3. Configurar según tu sistema operativo:
 
+#### Linux/macOS
 ```bash
-# Opcion 1: Variable de entorno
+# Opcion 1: Variable de entorno temporal
 export GROQ_API_KEY="tu-api-key-aqui"
+python launcher.py
 
-# Opcion 2: Agregar a ~/.bashrc (permanente)
+# Opcion 2: Permanente en ~/.bashrc o ~/.zshrc
 echo 'export GROQ_API_KEY="tu-api-key-aqui"' >> ~/.bashrc
 source ~/.bashrc
+```
+
+#### Windows (PowerShell)
+```powershell
+# Opcion 1: Temporal
+$env:GROQ_API_KEY="tu-api-key-aqui"
+python launcher.py
+
+# Opcion 2: Permanente (requiere reiniciar PowerShell)
+[Environment]::SetEnvironmentVariable("GROQ_API_KEY", "tu-api-key-aqui", "User")
+```
+
+#### Windows (CMD)
+```batch
+REM Temporal
+set GROQ_API_KEY=tu-api-key-aqui
+start.bat
+
+REM Permanente: usar interfaz de Windows
+REM Settings > System > Advanced System Settings > Environment Variables
 ```
 
 ### Variables de Entorno
@@ -113,12 +153,22 @@ Cambia el idioma via el boton de Opciones (icono de engranaje) - los cambios se 
 
 ### Modo GUI (Panel Flotante)
 
+#### Linux/macOS
 ```bash
 ./start.sh
-# o
-./run.py
 ```
 
+#### Windows
+```batch
+start.bat
+```
+
+#### Cross-platform
+```bash
+python launcher.py
+```
+
+**Pasos**:
 1. Selecciona el microfono en el dialogo inicial
 2. **Click** en el boton verde para empezar a grabar
 3. Habla...
@@ -130,24 +180,56 @@ Cambia el idioma via el boton de Opciones (icono de engranaje) - los cambios se 
 9. **Click** en el icono ? para ayuda
 10. **Click** en el icono de salir para cerrar
 
-### Modo CLI (Hotkey)
+### Modo CLI (Hotkey Global)
 
+#### Linux/macOS
 ```bash
 ./start.sh --cli
 ```
 
+#### Windows
+```batch
+start.bat --cli
+```
+
+#### Cross-platform
+```bash
+python launcher.py --cli
+```
+
+**Pasos**:
 1. Selecciona el microfono de la lista
 2. Presiona `Ctrl+Alt+Space` para empezar a grabar
 3. Habla...
 4. Presiona `Ctrl+Alt+Space` para detener y transcribir
 5. El texto aparece en la terminal y se copia al portapapeles
 
+### Argumentos disponibles
+
+```bash
+# Mostrar ayuda
+python launcher.py --help
+
+# GUI (default)
+python launcher.py
+
+# CLI con hotkey
+python launcher.py --cli
+
+# Saltar verificacion de audio
+python launcher.py --skip-audio-check
+
+# Reintentar audio (Linux)
+python launcher.py --fix-audio
+```
+
 ## Estructura del Proyecto
 
 ```
 audio-transcribe/
-├── start.sh                    # Script de inicio
-├── run.py                      # Lanzador con auto-venv
+├── launcher.py                 # Launcher cross-platform (punto de entrada principal)
+├── start.sh                    # Wrapper Unix/Linux/macOS (delega a launcher.py)
+├── start.bat                   # Wrapper Windows (delega a launcher.py)
 ├── floating_button_qt.py       # GUI (PySide6)
 ├── transcribe.py               # CLI (pynput)
 ├── transcription_controller.py # Logica compartida
@@ -173,23 +255,50 @@ audio-transcribe/
 
 ## Solucion de Problemas
 
-### Error: PortAudio library not found
+### PortAudio no encontrado
 
+**Linux (Debian/Ubuntu)**:
 ```bash
 sudo apt install libportaudio2
 ```
 
-### Error: No se encontraron microfonos
+**Linux (Fedora)**:
+```bash
+sudo dnf install portaudio
+```
 
+**macOS**:
+```bash
+brew install portaudio
+```
+
+**Windows**: Se incluye automáticamente con sounddevice
+
+### No se detectan microfonos
+
+**Linux**:
 ```bash
 # Verificar PulseAudio/PipeWire
 pactl list sources short
 
-# Reiniciar PipeWire
-systemctl --user restart pipewire pipewire-pulse
+# Listar dispositivos ALSA
+arecord -l
+
+# Reiniciar audio (automático con --fix-audio)
+python launcher.py --fix-audio
 ```
 
-### Error: xcb plugin not found (GUI)
+**macOS**:
+- Verificar: System Settings > Sound > Input
+- Conectar micrófono USB y esperar 2-3 segundos
+- Permitir acceso cuando macOS lo solicite
+
+**Windows**:
+- Verificar: Settings > System > Sound > Input
+- Verificar privacidad: Settings > Privacy & Security > Microphone
+- Desconectar y reconectar dispositivo USB
+
+### Error: xcb plugin not found (GUI en Linux)
 
 ```bash
 sudo apt install libxcb-cursor0
@@ -199,23 +308,51 @@ sudo apt install libxcb-cursor0
 
 ```bash
 export WHISPER_DEVICE="cpu"
+python launcher.py
 ```
 
-### Error: pyperclip no funciona
+### Portapapeles no funciona
 
+**Linux**:
 ```bash
 sudo apt install xclip
 ```
 
-### Microfono USB/Bluetooth no aparece
+**macOS**: Debería funcionar automáticamente (pbcopy)
 
+**Windows**: Debería funcionar automáticamente (Win32 API)
+
+### Hotkeys globales no funcionan (CLI mode)
+
+**Linux con Wayland**:
 ```bash
-# Reiniciar audio
-systemctl --user restart pipewire pipewire-pulse
-
-# O desconectar/reconectar USB y verificar
-arecord -l
+# Wayland no soporta hotkeys globales con pynput
+# Se recomienda usar modo GUI: python launcher.py
+# O cambiar a X11
 ```
+
+**macOS**:
+- Ir a: System Settings > Privacy & Security > Accessibility
+- Agregar Terminal (o iTerm) a la lista permitida
+
+**Windows**: Debería funcionar automáticamente
+
+### Python no encontrado
+
+**Linux**:
+```bash
+sudo apt install python3
+```
+
+**macOS**:
+```bash
+brew install python@3.12
+# o descargar desde python.org
+```
+
+**Windows**:
+- Descargar desde [python.org](https://www.python.org/downloads/)
+- **Importante**: Marcar "Add Python to PATH" durante instalación
 
 ## Licencia
 
@@ -278,13 +415,27 @@ Voice-to-text transcription tool with **floating panel** (GUI) or **global hotke
 
 ### System Dependencies
 
+#### Linux (Debian/Ubuntu)
 ```bash
-# Debian/Ubuntu
 sudo apt install python3-venv python3-full libportaudio2 xclip
 
 # For GUI on some systems
 sudo apt install libxcb-cursor0
 ```
+
+#### macOS
+```bash
+# Install Homebrew if you don't have it
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install PortAudio
+brew install portaudio
+```
+
+#### Windows
+- Download Python from [python.org](https://www.python.org/downloads/)
+- **Important**: Check "Add Python to PATH" during installation
+- Other dependencies are installed automatically
 
 ## Installation
 
@@ -293,11 +444,15 @@ sudo apt install libxcb-cursor0
 git clone https://github.com/luckberonne/audio-transcribe.git
 cd audio-transcribe
 
-# Give permissions
-chmod +x start.sh run.py
+# Give permissions (Linux/macOS only)
+chmod +x start.sh launcher.py
 
 # Run (installs dependencies automatically)
-./start.sh
+./start.sh                    # Linux/macOS (GUI)
+./start.sh --cli             # Linux/macOS (CLI with hotkey)
+start.bat                    # Windows (GUI)
+python launcher.py           # Cross-platform alternative
+python launcher.py --cli     # Cross-platform alternative (CLI)
 ```
 
 ## Configuration
@@ -306,15 +461,37 @@ chmod +x start.sh run.py
 
 1. Create free account at [https://console.groq.com/](https://console.groq.com/)
 2. Generate API Key
-3. Configure:
+3. Configure according to your operating system:
 
+#### Linux/macOS
 ```bash
-# Option 1: Environment variable
+# Option 1: Temporary environment variable
 export GROQ_API_KEY="your-api-key-here"
+python launcher.py
 
-# Option 2: Add to ~/.bashrc (permanent)
+# Option 2: Permanent in ~/.bashrc or ~/.zshrc
 echo 'export GROQ_API_KEY="your-api-key-here"' >> ~/.bashrc
 source ~/.bashrc
+```
+
+#### Windows (PowerShell)
+```powershell
+# Option 1: Temporary
+$env:GROQ_API_KEY="your-api-key-here"
+python launcher.py
+
+# Option 2: Permanent (requires PowerShell restart)
+[Environment]::SetEnvironmentVariable("GROQ_API_KEY", "your-api-key-here", "User")
+```
+
+#### Windows (CMD)
+```batch
+REM Temporary
+set GROQ_API_KEY=your-api-key-here
+start.bat
+
+REM Permanent: use Windows GUI
+REM Settings > System > Advanced System Settings > Environment Variables
 ```
 
 ### Environment Variables
@@ -338,12 +515,22 @@ Change language via Settings button (gear icon) - changes apply immediately and 
 
 ### GUI Mode (Floating Panel)
 
+#### Linux/macOS
 ```bash
 ./start.sh
-# or
-./run.py
 ```
 
+#### Windows
+```batch
+start.bat
+```
+
+#### Cross-platform
+```bash
+python launcher.py
+```
+
+**Steps**:
 1. Select microphone in initial dialog
 2. **Click** green button to start recording
 3. Speak...
@@ -355,24 +542,56 @@ Change language via Settings button (gear icon) - changes apply immediately and 
 9. **Click** ? icon for help
 10. **Click** exit icon to quit
 
-### CLI Mode (Hotkey)
+### CLI Mode (Global Hotkey)
 
+#### Linux/macOS
 ```bash
 ./start.sh --cli
 ```
 
+#### Windows
+```batch
+start.bat --cli
+```
+
+#### Cross-platform
+```bash
+python launcher.py --cli
+```
+
+**Steps**:
 1. Select microphone from list
 2. Press `Ctrl+Alt+Space` to start recording
 3. Speak...
 4. Press `Ctrl+Alt+Space` to stop and transcribe
 5. Text appears in terminal and is copied to clipboard
 
+### Available arguments
+
+```bash
+# Show help
+python launcher.py --help
+
+# GUI (default)
+python launcher.py
+
+# CLI with global hotkey
+python launcher.py --cli
+
+# Skip audio device verification
+python launcher.py --skip-audio-check
+
+# Attempt audio system restart (Linux)
+python launcher.py --fix-audio
+```
+
 ## Project Structure
 
 ```
 audio-transcribe/
-├── start.sh                    # Startup script
-├── run.py                      # Launcher with auto-venv
+├── launcher.py                 # Cross-platform launcher (main entry point)
+├── start.sh                    # Unix/Linux/macOS wrapper (delegates to launcher.py)
+├── start.bat                   # Windows wrapper (delegates to launcher.py)
 ├── floating_button_qt.py       # GUI (PySide6)
 ├── transcribe.py               # CLI (pynput)
 ├── transcription_controller.py # Shared logic
@@ -398,23 +617,50 @@ audio-transcribe/
 
 ## Troubleshooting
 
-### Error: PortAudio library not found
+### PortAudio not found
 
+**Linux (Debian/Ubuntu)**:
 ```bash
 sudo apt install libportaudio2
 ```
 
-### Error: No microphones found
+**Linux (Fedora)**:
+```bash
+sudo dnf install portaudio
+```
 
+**macOS**:
+```bash
+brew install portaudio
+```
+
+**Windows**: Automatically included with sounddevice
+
+### No microphones detected
+
+**Linux**:
 ```bash
 # Check PulseAudio/PipeWire
 pactl list sources short
 
-# Restart PipeWire
-systemctl --user restart pipewire pipewire-pulse
+# List ALSA devices
+arecord -l
+
+# Restart audio (automatic with --fix-audio)
+python launcher.py --fix-audio
 ```
 
-### Error: xcb plugin not found (GUI)
+**macOS**:
+- Check: System Settings > Sound > Input
+- Connect USB microphone and wait 2-3 seconds
+- Allow access when prompted
+
+**Windows**:
+- Check: Settings > System > Sound > Input
+- Check privacy: Settings > Privacy & Security > Microphone
+- Disconnect and reconnect USB device
+
+### Error: xcb plugin not found (GUI on Linux)
 
 ```bash
 sudo apt install libxcb-cursor0
@@ -424,23 +670,51 @@ sudo apt install libxcb-cursor0
 
 ```bash
 export WHISPER_DEVICE="cpu"
+python launcher.py
 ```
 
-### Error: pyperclip not working
+### Clipboard not working
 
+**Linux**:
 ```bash
 sudo apt install xclip
 ```
 
-### USB/Bluetooth microphone not appearing
+**macOS**: Should work automatically (pbcopy)
 
+**Windows**: Should work automatically (Win32 API)
+
+### Global hotkeys not working (CLI mode)
+
+**Linux with Wayland**:
 ```bash
-# Restart audio
-systemctl --user restart pipewire pipewire-pulse
-
-# Or disconnect/reconnect USB and verify
-arecord -l
+# Wayland doesn't support global hotkeys with pynput
+# Recommended: use GUI mode: python launcher.py
+# Or switch to X11
 ```
+
+**macOS**:
+- Go to: System Settings > Privacy & Security > Accessibility
+- Add Terminal (or iTerm) to the allowed list
+
+**Windows**: Should work automatically
+
+### Python not found
+
+**Linux**:
+```bash
+sudo apt install python3
+```
+
+**macOS**:
+```bash
+brew install python@3.12
+# or download from python.org
+```
+
+**Windows**:
+- Download from [python.org](https://www.python.org/downloads/)
+- **Important**: Check "Add Python to PATH" during installation
 
 ## License
 
