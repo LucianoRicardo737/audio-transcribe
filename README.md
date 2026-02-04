@@ -57,6 +57,20 @@ Herramienta de transcripcion de voz a texto con **panel flotante** (GUI) o **hot
 | Exito | Check | Verde | Listo, copiado al portapapeles |
 | Error | Alerta | Gris | Fallo la transcripcion |
 
+## Whisper (opcional)
+
+Whisper local es un **fallback opcional** que se usa solo si Groq API falla. **No se instala por defecto** para mantener el entorno ligero (~50MB en vez de ~350MB).
+
+```bash
+# Instalar con Whisper
+python launcher.py --with-whisper
+
+# O manualmente
+pip install -r requirements-full.txt
+```
+
+> La mayoria de los usuarios no necesita Whisper: Groq es gratis, rapido y confiable.
+
 ## Requisitos
 
 - Python 3.10+
@@ -256,11 +270,51 @@ python launcher.py
 # CLI con hotkey
 python launcher.py --cli
 
+# Instalar con Whisper local (fallback)
+python launcher.py --with-whisper
+
 # Saltar verificacion de audio
 python launcher.py --skip-audio-check
 
 # Reintentar audio (Linux)
 python launcher.py --fix-audio
+```
+
+## Build Portable (ejecutable sin dependencias)
+
+Genera un **unico archivo ejecutable** que no necesita Python ni dependencias. Ideal para compartir o usar en maquinas sin configurar.
+
+```bash
+python build_portable.py
+```
+
+El ejecutable se genera en `dist/` (~120-150 MB). Solo incluye modo GUI (sin Whisper).
+
+### Como ejecutar por plataforma
+
+| Plataforma | Con Python instalado | Ejecutable portable |
+|------------|---------------------|-------------------|
+| **Windows** | Doble click en `start.bat` | Doble click en `AudioTranscribe.exe` |
+| **macOS** | `./start.sh` desde terminal | Doble click en `AudioTranscribe` |
+| **Linux** | `./start.sh` desde terminal | `./AudioTranscribe` desde terminal |
+
+> **Windows** es el unico donde se puede abrir con doble click directamente (via `start.bat` o el `.exe` portable).
+
+### Generar el ejecutable
+
+Cada sistema operativo genera su propio ejecutable (**no se puede cross-compilar**):
+
+| Buildear desde | Genera |
+|----------------|--------|
+| Windows | `dist\AudioTranscribe.exe` |
+| macOS | `dist/AudioTranscribe` |
+| Linux | `dist/AudioTranscribe` |
+
+Opciones del build:
+```bash
+python build_portable.py                # Build normal
+python build_portable.py --keep-venv    # No borrar venv de build
+python build_portable.py --no-clean     # Mantener artefactos (build/)
 ```
 
 ## Estructura del Proyecto
@@ -278,7 +332,10 @@ audio-transcribe/
 ├── config.py                   # Configuracion
 ├── settings.py                 # Configuracion persistente y traducciones
 ├── app_settings.json           # Preferencias guardadas (auto-creado)
-├── requirements.txt            # Dependencias Python
+├── requirements.txt            # Dependencias Python (sin Whisper)
+├── requirements-full.txt       # Dependencias completas (con Whisper)
+├── build_portable.py           # Script para generar ejecutable portable
+├── AudioTranscribe.spec        # Configuracion PyInstaller
 ├── README.md                   # Este archivo
 └── CLAUDE.md                   # Guia para Claude Code
 ```
@@ -458,6 +515,20 @@ Voice-to-text transcription tool with **floating panel** (GUI) or **global hotke
 | Processing | Spinner | Yellow (spin) | Transcribing |
 | Success | Check | Green | Done, copied to clipboard |
 | Error | Alert | Gray | Transcription failed |
+
+## Whisper (optional)
+
+Local Whisper is an **optional fallback** used only if Groq API fails. **Not installed by default** to keep the environment lightweight (~50MB instead of ~350MB).
+
+```bash
+# Install with Whisper
+python launcher.py --with-whisper
+
+# Or manually
+pip install -r requirements-full.txt
+```
+
+> Most users don't need Whisper: Groq is free, fast, and reliable.
 
 ## Requirements
 
@@ -658,11 +729,51 @@ python launcher.py
 # CLI with global hotkey
 python launcher.py --cli
 
+# Install with local Whisper (fallback)
+python launcher.py --with-whisper
+
 # Skip audio device verification
 python launcher.py --skip-audio-check
 
 # Attempt audio system restart (Linux)
 python launcher.py --fix-audio
+```
+
+## Portable Build (executable without dependencies)
+
+Generates a **single executable file** that doesn't need Python or dependencies. Ideal for sharing or using on unconfigured machines.
+
+```bash
+python build_portable.py
+```
+
+The executable is generated in `dist/` (~120-150 MB). GUI mode only (no Whisper).
+
+### How to run per platform
+
+| Platform | With Python installed | Portable executable |
+|----------|---------------------|-------------------|
+| **Windows** | Double-click `start.bat` | Double-click `AudioTranscribe.exe` |
+| **macOS** | `./start.sh` from terminal | Double-click `AudioTranscribe` |
+| **Linux** | `./start.sh` from terminal | `./AudioTranscribe` from terminal |
+
+> **Windows** is the only platform where you can open it with a double-click directly (via `start.bat` or the portable `.exe`).
+
+### Generating the executable
+
+Each OS generates its own executable (**cross-compilation not supported**):
+
+| Build from | Generates |
+|------------|-----------|
+| Windows | `dist\AudioTranscribe.exe` |
+| macOS | `dist/AudioTranscribe` |
+| Linux | `dist/AudioTranscribe` |
+
+Build options:
+```bash
+python build_portable.py                # Normal build
+python build_portable.py --keep-venv    # Keep build venv
+python build_portable.py --no-clean     # Keep build artifacts (build/)
 ```
 
 ## Project Structure
@@ -680,7 +791,10 @@ audio-transcribe/
 ├── config.py                   # Configuration
 ├── settings.py                 # Persistent settings & translations
 ├── app_settings.json           # Saved preferences (auto-created)
-├── requirements.txt            # Python dependencies
+├── requirements.txt            # Python dependencies (without Whisper)
+├── requirements-full.txt       # Full dependencies (with Whisper)
+├── build_portable.py           # Script to generate portable executable
+├── AudioTranscribe.spec        # PyInstaller configuration
 ├── README.md                   # This file
 └── CLAUDE.md                   # Guide for Claude Code
 ```

@@ -26,6 +26,16 @@ ENV/
 # App settings (contains API key)
 app_settings.json
 
+# Build artifacts
+dist/
+build/
+.build_venv/
+*.spec.bak
+
+# Dependency markers
+.deps_installed
+.deps_full_installed
+
 # OS
 .DS_Store
 Thumbs.db

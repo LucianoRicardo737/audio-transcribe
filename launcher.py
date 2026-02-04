@@ -76,6 +76,10 @@ def parse_args():
         '--fix-audio', action='store_true',
         help='Attempt to restart audio subsystem if no devices found (Linux only)'
     )
+    parser.add_argument(
+        '--with-whisper', action='store_true',
+        help='Install full dependencies including Whisper local fallback (~300MB extra)'
+    )
     return parser.parse_args()
 
 # --- Banner ---
@@ -235,14 +239,25 @@ def ensure_venv():
 
 # --- Dependencies ---
 
-def ensure_dependencies():
+def ensure_dependencies(with_whisper=False):
     marker = SCRIPT_DIR / ".deps_installed"
-    if marker.exists():
+    marker_full = SCRIPT_DIR / ".deps_full_installed"
+
+    # If requesting whisper and already have full deps, skip
+    if with_whisper and marker_full.exists():
+        return
+    # If not requesting whisper and already have deps, skip
+    if not with_whisper and marker.exists():
         return
 
-    print(f"{YELLOW}Instalando dependencias (primera vez)...{NC}")
+    if with_whisper:
+        req = SCRIPT_DIR / "requirements-full.txt"
+        print(f"{YELLOW}Instalando dependencias completas (con Whisper)...{NC}")
+    else:
+        req = SCRIPT_DIR / "requirements.txt"
+        print(f"{YELLOW}Instalando dependencias (primera vez)...{NC}")
+
     pip = get_venv_pip()
-    req = SCRIPT_DIR / "requirements.txt"
 
     try:
         subprocess.check_call(
@@ -251,6 +266,8 @@ def ensure_dependencies():
         )
         subprocess.check_call([str(pip), "install", "-r", str(req)])
         marker.touch()
+        if with_whisper:
+            marker_full.touch()
         print(f"{GREEN}Dependencias instaladas{NC}")
     except subprocess.CalledProcessError as e:
         print(f"{RED}Error instalando dependencias: {e}{NC}")
@@ -380,11 +397,26 @@ def main():
     args = parse_args()
     mode = "cli" if args.cli else "gui"
 
+    # Wayland + CLI: warn and suggest GUI
+    if mode == "cli" and PLAT == "linux":
+        session_type = os.environ.get("XDG_SESSION_TYPE", "")
+        if session_type == "wayland":
+            print(f"{YELLOW}Wayland detectado: las hotkeys globales (modo CLI) pueden no funcionar.{NC}")
+            print(f"{YELLOW}Se recomienda usar modo GUI (sin --cli).{NC}")
+            try:
+                resp = input(f"{CYAN}Cambiar a modo GUI? [S/n]: {NC}").strip().lower()
+                if resp in ("", "s", "y", "si", "yes"):
+                    mode = "gui"
+                    print(f"{GREEN}Cambiando a modo GUI{NC}")
+            except (EOFError, KeyboardInterrupt):
+                pass
+            print()
+
     print_banner(mode)
     check_python_version()
     check_system_dependencies()
     ensure_venv()
-    ensure_dependencies()
+    ensure_dependencies(with_whisper=args.with_whisper)
 
     if not args.skip_audio_check:
         verify_audio_devices(fix_audio=args.fix_audio)

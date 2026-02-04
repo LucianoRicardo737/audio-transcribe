@@ -139,7 +139,16 @@ class TranscriptionService:
             return text
 
         # Fallback to local Whisper
-        console.print("[yellow]Groq fallo, usando Whisper local...[/yellow]")
+        console.print("[yellow]Groq fallo, intentando Whisper local...[/yellow]")
+        try:
+            import whisper  # noqa: F401
+        except ImportError:
+            console.print(
+                "[red]Whisper no esta instalado. Groq fallo y no hay fallback local.[/red]\n"
+                "[yellow]Para instalar Whisper: pip install -r requirements-full.txt[/yellow]"
+            )
+            return None
+
         text = self.transcribe_with_whisper(audio_path)
 
         if text:
