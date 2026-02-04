@@ -12,6 +12,8 @@ DEFAULT_SETTINGS = {
     "language": "es",
     "device_id": None,
     "groq_api_key": "",
+    "button_size": "normal",    # small, normal, large, xlarge
+    "orientation": "vertical",  # vertical, horizontal
 }
 
 # Translations
@@ -50,6 +52,16 @@ TRANSLATIONS = {
         "tooltip_exit": "Salir",
         "settings_api_key": "Clave API Groq",
         "settings_api_key_hint": "Obtener gratis en console.groq.com",
+        "settings_appearance": "Apariencia",
+        "settings_button_size": "Tamano de botones",
+        "settings_orientation": "Orientacion del panel",
+        "size_mini": "Mini",
+        "size_small": "Chico",
+        "size_normal": "Normal",
+        "size_large": "Grande",
+        "size_xlarge": "Muy grande",
+        "orientation_vertical": "Vertical",
+        "orientation_horizontal": "Horizontal",
     },
     "en": {
         "help_title": "Help",
@@ -85,6 +97,16 @@ TRANSLATIONS = {
         "tooltip_exit": "Exit",
         "settings_api_key": "Groq API Key",
         "settings_api_key_hint": "Get free at console.groq.com",
+        "settings_appearance": "Appearance",
+        "settings_button_size": "Button size",
+        "settings_orientation": "Panel orientation",
+        "size_mini": "Mini",
+        "size_small": "Small",
+        "size_normal": "Normal",
+        "size_large": "Large",
+        "size_xlarge": "Extra large",
+        "orientation_vertical": "Vertical",
+        "orientation_horizontal": "Horizontal",
     }
 }
 

@@ -16,24 +16,34 @@ Herramienta de transcripcion de voz a texto con **panel flotante** (GUI) o **hot
 - **Groq API**: Transcripcion rapida y gratuita en la nube (Whisper Large V3)
 - **Whisper Fallback**: Fallback local automatico si Groq falla
 - **Configuracion de API Key desde GUI**: Configura tu clave Groq directamente desde la app (sin variables de entorno)
-- **Seleccion de Microfono**: Elige tu dispositivo de entrada
+- **Seleccion de Microfono**: Elige tu dispositivo de entrada (se guarda y reutiliza entre reinicios)
+- **Tamano Configurable**: 5 tamanos de botones (Mini, Chico, Normal, Grande, Muy grande)
+- **Orientacion del Panel**: Vertical u Horizontal, configurable desde Opciones
 - **Portapapeles Automatico**: El texto transcrito se copia automaticamente
 - **Arrastrable**: Mueve el panel a cualquier lugar de la pantalla
 - **Multiplataforma**: Linux, Windows, macOS
 
 ## Diseno del Panel
 
+**Vertical** (default):
 ```
 ┌──────────────┐
-│      🎤      │  Grabar/Detener (verde/rojo)
+│      🎤      │  Grabar/Detener
 ├──────────────┤
-│      ⏸️      │  Pausar/Reanudar (naranja/verde)
+│      ⏸️      │  Pausar/Reanudar
 ├──────────────┤
-│      ✕       │  Cancelar (gris/rojo)
+│      ✕       │  Cancelar
 ├──────────────┤
 │   ?  ⚙️  ⏻   │  Ayuda | Opciones | Salir
 └──────────────┘
-    Fondo oscuro transparente
+```
+
+**Horizontal**:
+```
+┌──────────────────────────┐
+│   🎤     ⏸️     ✕        │
+│       ?  ⚙️  ⏻           │
+└──────────────────────────┘
 ```
 
 ## Estados de los Botones
@@ -168,9 +178,16 @@ REM Settings > System > Advanced System Settings > Environment Variables
 
 ### Configuracion Persistente
 
-Las preferencias de idioma, microfono y clave API Groq se guardan en `app_settings.json` (creado automaticamente).
+Las preferencias se guardan en `app_settings.json` (creado automaticamente): idioma, microfono, clave API Groq, tamano de botones y orientacion del panel.
 
-Desde el boton de Opciones (icono de engranaje) podes cambiar idioma, microfono y clave API. Los cambios se aplican inmediatamente y persisten entre reinicios.
+Desde el boton de **Opciones** (icono de engranaje) podes cambiar:
+- **Clave API Groq**: ver y modificar la clave
+- **Microfono**: seleccionar dispositivo de entrada (se recuerda entre reinicios)
+- **Idioma**: Espanol / Ingles
+- **Tamano de botones**: Mini (36px), Chico (44px), Normal (50px), Grande (64px), Muy grande (80px)
+- **Orientacion del panel**: Vertical u Horizontal
+
+Los cambios se aplican inmediatamente y persisten entre reinicios.
 
 ## Uso
 
@@ -401,24 +418,34 @@ Voice-to-text transcription tool with **floating panel** (GUI) or **global hotke
 - **Groq API**: Fast, free cloud transcription (Whisper Large V3)
 - **Whisper Fallback**: Automatic local fallback if Groq fails
 - **GUI API Key Setup**: Configure your Groq key directly from the app (no environment variables needed)
-- **Microphone Selection**: Choose your input device
+- **Microphone Selection**: Choose your input device (saved and reused across restarts)
+- **Configurable Size**: 5 button sizes (Mini, Small, Normal, Large, Extra large)
+- **Panel Orientation**: Vertical or Horizontal, configurable from Settings
 - **Auto Clipboard**: Transcribed text copied automatically
 - **Draggable**: Move panel anywhere on screen
 - **Cross-platform**: Linux, Windows, macOS
 
 ## Panel Layout
 
+**Vertical** (default):
 ```
 ┌──────────────┐
-│      🎤      │  Record/Stop (green/red)
+│      🎤      │  Record/Stop
 ├──────────────┤
-│      ⏸️      │  Pause/Resume (orange/green)
+│      ⏸️      │  Pause/Resume
 ├──────────────┤
-│      ✕       │  Cancel (gray/red)
+│      ✕       │  Cancel
 ├──────────────┤
 │   ?  ⚙️  ⏻   │  Help | Settings | Exit
 └──────────────┘
-    Dark transparent background
+```
+
+**Horizontal**:
+```
+┌──────────────────────────┐
+│   🎤     ⏸️     ✕        │
+│       ?  ⚙️  ⏻           │
+└──────────────────────────┘
 ```
 
 ## Button States
@@ -553,9 +580,16 @@ REM Settings > System > Advanced System Settings > Environment Variables
 
 ### Persistent Settings
 
-Language, microphone and Groq API key preferences are saved in `app_settings.json` (created automatically).
+Preferences are saved in `app_settings.json` (created automatically): language, microphone, Groq API key, button size and panel orientation.
 
-From the Settings button (gear icon) you can change language, microphone and API key. Changes apply immediately and persist across restarts.
+From the **Settings** button (gear icon) you can change:
+- **Groq API Key**: view and modify the key
+- **Microphone**: select input device (remembered across restarts)
+- **Language**: Spanish / English
+- **Button size**: Mini (36px), Small (44px), Normal (50px), Large (64px), Extra large (80px)
+- **Panel orientation**: Vertical or Horizontal
+
+Changes apply immediately and persist across restarts.
 
 ## Usage
 
