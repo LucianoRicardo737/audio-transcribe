@@ -10,7 +10,7 @@ from typing import Optional
 from PySide6.QtWidgets import (
     QApplication, QWidget, QMenu, QDialog, QVBoxLayout,
     QHBoxLayout, QLabel, QListWidget, QPushButton, QListWidgetItem,
-    QComboBox, QGroupBox, QFormLayout, QMessageBox
+    QComboBox, QGroupBox, QFormLayout, QMessageBox, QLineEdit
 )
 from PySide6.QtCore import (
     Qt, QPoint, QTimer, QSize, QPropertyAnimation,
@@ -23,7 +23,7 @@ from PySide6.QtGui import (
 import qtawesome as qta
 
 from transcription_controller import TranscriptionController, TranscriptionState
-from config import BUTTON_SIZE, BUTTON_POSITION, GROQ_MODEL
+from config import BUTTON_SIZE, BUTTON_POSITION, GROQ_MODEL, GROQ_API_KEY
 from settings import get_settings, update_settings, get_text, TRANSLATIONS
 
 
@@ -635,8 +635,12 @@ class FloatingPanel(QWidget):
             if dialog.selected_language and dialog.selected_language != current_language:
                 self.controller.set_language(dialog.selected_language)
                 update_settings(language=dialog.selected_language)
-                # Update tooltips with new language
                 self._update_tooltips()
+                changed = True
+
+            current_api_key = settings.get("groq_api_key", "")
+            if dialog.selected_api_key is not None and dialog.selected_api_key != current_api_key:
+                update_settings(groq_api_key=dialog.selected_api_key)
                 changed = True
 
             if changed:
@@ -742,7 +746,7 @@ LANGUAGES = [
 
 
 class SettingsDialog(QDialog):
-    """Settings dialog for microphone and language selection."""
+    """Settings dialog for microphone, language and API key."""
 
     def __init__(self, devices, current_device_id, current_language, parent=None):
         super().__init__(parent)
@@ -750,15 +754,45 @@ class SettingsDialog(QDialog):
         t = lambda key: get_text(key, current_language)
 
         self.setWindowTitle(t("settings_title"))
-        self.setFixedSize(360, 280)
+        self.setFixedSize(360, 370)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         self.selected_device_id = current_device_id
         self.selected_language = current_language
+        self.selected_api_key = None
+
+        settings = get_settings()
 
         layout = QVBoxLayout(self)
-        layout.setSpacing(16)
+        layout.setSpacing(12)
         layout.setContentsMargins(20, 20, 20, 20)
+
+        # API Key section
+        api_group = QGroupBox(t("settings_api_key"))
+        api_layout = QVBoxLayout(api_group)
+
+        self.api_key_input = QLineEdit()
+        self.api_key_input.setEchoMode(QLineEdit.Password)
+        self.api_key_input.setPlaceholderText(t("settings_api_key_hint"))
+        self.api_key_input.setStyleSheet("QLineEdit { padding: 6px; }")
+        current_key = settings.get("groq_api_key", "") or GROQ_API_KEY
+        if current_key:
+            self.api_key_input.setText(current_key)
+        api_layout.addWidget(self.api_key_input)
+
+        # Toggle visibility button
+        self.show_key_btn = QPushButton("👁")
+        self.show_key_btn.setFixedWidth(32)
+        self.show_key_btn.setCheckable(True)
+        self.show_key_btn.setStyleSheet("QPushButton { border: none; font-size: 14px; }")
+        self.show_key_btn.toggled.connect(self._toggle_key_visibility)
+
+        key_row = QHBoxLayout()
+        key_row.addStretch()
+        key_row.addWidget(self.show_key_btn)
+        api_layout.addLayout(key_row)
+
+        layout.addWidget(api_group)
 
         # Microphone section
         mic_group = QGroupBox(t("settings_microphone"))
@@ -824,10 +858,17 @@ class SettingsDialog(QDialog):
 
         layout.addLayout(btn_layout)
 
+    def _toggle_key_visibility(self, checked):
+        """Toggle API key visibility."""
+        self.api_key_input.setEchoMode(
+            QLineEdit.Normal if checked else QLineEdit.Password
+        )
+
     def _on_accept(self):
         """Save selections."""
         self.selected_device_id = self.mic_combo.currentData()
         self.selected_language = self.lang_combo.currentData()
+        self.selected_api_key = self.api_key_input.text().strip()
         self.accept()
 
 
@@ -939,6 +980,84 @@ class DeviceDialog(QDialog):
         self.accept()
 
 
+class ApiKeyDialog(QDialog):
+    """Dialog to configure Groq API key on first run."""
+
+    def __init__(self, lang="es", parent=None):
+        super().__init__(parent)
+        t = lambda key: get_text(key, lang)
+
+        self.setWindowTitle(t("settings_api_key"))
+        self.setFixedSize(400, 220)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+
+        self.api_key = ""
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(12)
+        layout.setContentsMargins(24, 24, 24, 24)
+
+        # Title
+        title = QLabel(t("help_app_title"))
+        title.setFont(QFont("", 14, QFont.Bold))
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+
+        # Instruction
+        hint = QLabel(t("settings_api_key_hint"))
+        hint.setAlignment(Qt.AlignCenter)
+        hint.setStyleSheet("color: #888;")
+        hint.setOpenExternalLinks(True)
+        layout.addWidget(hint)
+
+        layout.addSpacing(4)
+
+        # API key input
+        self.api_key_input = QLineEdit()
+        self.api_key_input.setPlaceholderText("gsk_...")
+        self.api_key_input.setStyleSheet("QLineEdit { padding: 8px; font-size: 13px; }")
+        layout.addWidget(self.api_key_input)
+
+        layout.addStretch()
+
+        # Buttons
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+
+        cancel_btn = QPushButton(t("settings_cancel"))
+        cancel_btn.clicked.connect(self.reject)
+        btn_layout.addWidget(cancel_btn)
+
+        ok_btn = QPushButton(t("settings_save"))
+        ok_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 8px 20px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover { background-color: #45a049; }
+        """)
+        ok_btn.clicked.connect(self._on_accept)
+        btn_layout.addWidget(ok_btn)
+
+        layout.addLayout(btn_layout)
+
+    def _on_accept(self):
+        key = self.api_key_input.text().strip()
+        if key:
+            self.api_key = key
+            self.accept()
+
+
+def _has_api_key() -> bool:
+    """Check if a Groq API key is available from settings or env var."""
+    saved = get_settings().get("groq_api_key", "")
+    return bool(saved) or bool(GROQ_API_KEY)
+
+
 def main():
     """Entry point."""
     app = QApplication(sys.argv)
@@ -947,6 +1066,14 @@ def main():
     # Load saved settings
     settings = get_settings()
     saved_language = settings.get("language", "es")
+
+    # Ask for API key if not configured anywhere
+    if not _has_api_key():
+        dialog = ApiKeyDialog(saved_language)
+        if dialog.exec() == QDialog.Accepted and dialog.api_key:
+            update_settings(groq_api_key=dialog.api_key)
+        else:
+            return 1
 
     # Create panel
     panel = FloatingPanel()

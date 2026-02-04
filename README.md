@@ -15,6 +15,7 @@ Herramienta de transcripcion de voz a texto con **panel flotante** (GUI) o **hot
 - **Cancelar Grabacion**: Descarta sin transcribir
 - **Groq API**: Transcripcion rapida y gratuita en la nube (Whisper Large V3)
 - **Whisper Fallback**: Fallback local automatico si Groq falla
+- **Configuracion de API Key desde GUI**: Configura tu clave Groq directamente desde la app (sin variables de entorno)
 - **Seleccion de Microfono**: Elige tu dispositivo de entrada
 - **Portapapeles Automatico**: El texto transcrito se copia automaticamente
 - **Arrastrable**: Mueve el panel a cualquier lugar de la pantalla
@@ -99,9 +100,19 @@ python launcher.py --cli     # Alternativa cross-platform (CLI)
 
 1. Crear cuenta gratuita en [https://console.groq.com/](https://console.groq.com/)
 2. Generar API Key
-3. Configurar según tu sistema operativo:
+3. Configurar con uno de estos metodos:
 
-#### Linux/macOS
+#### Desde la app (recomendado)
+
+En la primera ejecucion, la app pide automaticamente la clave API. Tambien se puede ver y cambiar en cualquier momento desde **Opciones** (icono de engranaje).
+
+La clave se guarda en `app_settings.json` y persiste entre reinicios. Funciona en todos los sistemas operativos.
+
+#### Variable de entorno (alternativa)
+
+<details>
+<summary>Linux/macOS</summary>
+
 ```bash
 # Opcion 1: Variable de entorno temporal
 export GROQ_API_KEY="tu-api-key-aqui"
@@ -112,7 +123,11 @@ echo 'export GROQ_API_KEY="tu-api-key-aqui"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-#### Windows (PowerShell)
+</details>
+
+<details>
+<summary>Windows (PowerShell)</summary>
+
 ```powershell
 # Opcion 1: Temporal
 $env:GROQ_API_KEY="tu-api-key-aqui"
@@ -122,7 +137,11 @@ python launcher.py
 [Environment]::SetEnvironmentVariable("GROQ_API_KEY", "tu-api-key-aqui", "User")
 ```
 
-#### Windows (CMD)
+</details>
+
+<details>
+<summary>Windows (CMD)</summary>
+
 ```batch
 REM Temporal
 set GROQ_API_KEY=tu-api-key-aqui
@@ -131,6 +150,10 @@ start.bat
 REM Permanente: usar interfaz de Windows
 REM Settings > System > Advanced System Settings > Environment Variables
 ```
+
+</details>
+
+> **Nota**: Si la clave esta configurada tanto en la app como en variable de entorno, la de la app tiene prioridad.
 
 ### Variables de Entorno
 
@@ -145,9 +168,9 @@ REM Settings > System > Advanced System Settings > Environment Variables
 
 ### Configuracion Persistente
 
-Las preferencias de idioma y microfono se guardan en `app_settings.json` (creado automaticamente).
+Las preferencias de idioma, microfono y clave API Groq se guardan en `app_settings.json` (creado automaticamente).
 
-Cambia el idioma via el boton de Opciones (icono de engranaje) - los cambios se aplican inmediatamente y persisten entre reinicios.
+Desde el boton de Opciones (icono de engranaje) podes cambiar idioma, microfono y clave API. Los cambios se aplican inmediatamente y persisten entre reinicios.
 
 ## Uso
 
@@ -176,7 +199,7 @@ python launcher.py
 5. **Click** en el boton rojo de detener para transcribir
 6. El texto se copia automaticamente al portapapeles
 7. **Arrastra** el panel para moverlo
-8. **Click** en el icono de engranaje para opciones (microfono, idioma)
+8. **Click** en el icono de engranaje para opciones (clave API, microfono, idioma)
 9. **Click** en el icono ? para ayuda
 10. **Click** en el icono de salir para cerrar
 
@@ -377,6 +400,7 @@ Voice-to-text transcription tool with **floating panel** (GUI) or **global hotke
 - **Cancel Recording**: Discard without transcribing
 - **Groq API**: Fast, free cloud transcription (Whisper Large V3)
 - **Whisper Fallback**: Automatic local fallback if Groq fails
+- **GUI API Key Setup**: Configure your Groq key directly from the app (no environment variables needed)
 - **Microphone Selection**: Choose your input device
 - **Auto Clipboard**: Transcribed text copied automatically
 - **Draggable**: Move panel anywhere on screen
@@ -461,9 +485,19 @@ python launcher.py --cli     # Cross-platform alternative (CLI)
 
 1. Create free account at [https://console.groq.com/](https://console.groq.com/)
 2. Generate API Key
-3. Configure according to your operating system:
+3. Configure using one of these methods:
 
-#### Linux/macOS
+#### From the app (recommended)
+
+On first run, the app automatically prompts for the API key. You can also view and change it anytime from **Settings** (gear icon).
+
+The key is saved to `app_settings.json` and persists across restarts. Works on all operating systems.
+
+#### Environment variable (alternative)
+
+<details>
+<summary>Linux/macOS</summary>
+
 ```bash
 # Option 1: Temporary environment variable
 export GROQ_API_KEY="your-api-key-here"
@@ -474,7 +508,11 @@ echo 'export GROQ_API_KEY="your-api-key-here"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-#### Windows (PowerShell)
+</details>
+
+<details>
+<summary>Windows (PowerShell)</summary>
+
 ```powershell
 # Option 1: Temporary
 $env:GROQ_API_KEY="your-api-key-here"
@@ -484,7 +522,11 @@ python launcher.py
 [Environment]::SetEnvironmentVariable("GROQ_API_KEY", "your-api-key-here", "User")
 ```
 
-#### Windows (CMD)
+</details>
+
+<details>
+<summary>Windows (CMD)</summary>
+
 ```batch
 REM Temporary
 set GROQ_API_KEY=your-api-key-here
@@ -493,6 +535,10 @@ start.bat
 REM Permanent: use Windows GUI
 REM Settings > System > Advanced System Settings > Environment Variables
 ```
+
+</details>
+
+> **Note**: If the key is configured both in the app and as an environment variable, the app setting takes priority.
 
 ### Environment Variables
 
@@ -507,9 +553,9 @@ REM Settings > System > Advanced System Settings > Environment Variables
 
 ### Persistent Settings
 
-Language and microphone preferences are saved in `app_settings.json` (created automatically).
+Language, microphone and Groq API key preferences are saved in `app_settings.json` (created automatically).
 
-Change language via Settings button (gear icon) - changes apply immediately and persist across restarts.
+From the Settings button (gear icon) you can change language, microphone and API key. Changes apply immediately and persist across restarts.
 
 ## Usage
 
@@ -538,7 +584,7 @@ python launcher.py
 5. **Click** red stop button to transcribe
 6. Text is copied automatically to clipboard
 7. **Drag** panel to move it
-8. **Click** gear icon for settings (microphone, language)
+8. **Click** gear icon for settings (API key, microphone, language)
 9. **Click** ? icon for help
 10. **Click** exit icon to quit
 

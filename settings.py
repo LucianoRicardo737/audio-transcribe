@@ -11,6 +11,7 @@ SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "app_settings.json")
 DEFAULT_SETTINGS = {
     "language": "es",
     "device_id": None,
+    "groq_api_key": "",
 }
 
 # Translations
@@ -47,6 +48,8 @@ TRANSLATIONS = {
         "tooltip_help": "Ayuda",
         "tooltip_settings": "Opciones",
         "tooltip_exit": "Salir",
+        "settings_api_key": "Clave API Groq",
+        "settings_api_key_hint": "Obtener gratis en console.groq.com",
     },
     "en": {
         "help_title": "Help",
@@ -80,6 +83,8 @@ TRANSLATIONS = {
         "tooltip_help": "Help",
         "tooltip_settings": "Settings",
         "tooltip_exit": "Exit",
+        "settings_api_key": "Groq API Key",
+        "settings_api_key_hint": "Get free at console.groq.com",
     }
 }
 

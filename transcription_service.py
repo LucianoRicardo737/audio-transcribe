@@ -12,6 +12,7 @@ from config import (
     WHISPER_MODEL,
     WHISPER_DEVICE
 )
+from settings import get_settings
 
 console = Console()
 
@@ -22,6 +23,11 @@ class TranscriptionService:
     def __init__(self):
         self.whisper_model = None  # Lazy loaded
         self.language = LANGUAGE  # Can be changed at runtime
+
+    def _get_api_key(self) -> str:
+        """Get Groq API key from settings (priority) or env var fallback."""
+        saved_key = get_settings().get("groq_api_key", "")
+        return saved_key if saved_key else GROQ_API_KEY
 
     def transcribe_with_groq(self, audio_path: str) -> str:
         """
@@ -34,11 +40,16 @@ class TranscriptionService:
             Transcribed text or None if failed
         """
         try:
+            api_key = self._get_api_key()
+            if not api_key:
+                console.print("[yellow]No Groq API key configured[/yellow]")
+                return None
+
             with open(audio_path, 'rb') as audio_file:
                 response = httpx.post(
                     GROQ_ENDPOINT,
                     headers={
-                        "Authorization": f"Bearer {GROQ_API_KEY}"
+                        "Authorization": f"Bearer {api_key}"
                     },
                     files={
                         "file": ("audio.wav", audio_file, "audio/wav")

@@ -23,6 +23,9 @@ ENV/
 .env
 .env.local
 
+# App settings (contains API key)
+app_settings.json
+
 # OS
 .DS_Store
 Thumbs.db
