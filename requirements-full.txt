@@ -1,0 +1,8 @@
+# Full dependencies (includes Whisper local fallback)
+# Use this if you want local transcription when Groq API is unavailable
+# Install: pip install -r requirements-full.txt
+
+-r requirements.txt
+
+# Whisper fallback (local) - adds ~300MB to venv
+openai-whisper>=20231117

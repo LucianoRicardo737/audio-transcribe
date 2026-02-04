@@ -8,7 +8,7 @@ Voice-to-text transcription tool with two interfaces:
 - **GUI**: Floating panel (always-on-top) with Record/Pause/Cancel buttons
 - **CLI**: Global hotkey support
 
-Uses **Groq API** (free, fast) as primary service and **local Whisper** as fallback.
+Uses **Groq API** (free, fast) as primary service and **local Whisper** as optional fallback.
 
 ## Commands
 
@@ -20,11 +20,17 @@ Uses **Groq API** (free, fast) as primary service and **local Whisper** as fallb
 # Run CLI (hotkey mode)
 ./start.sh --cli
 
+# Install with Whisper local fallback
+python launcher.py --with-whisper
+
 # Skip audio device verification
 ./start.sh --skip-audio-check
 
 # Attempt audio system restart (Linux)
 ./start.sh --fix-audio
+
+# Build portable executable
+python build_portable.py
 
 # Manual execution (all platforms)
 python launcher.py          # GUI
@@ -117,7 +123,7 @@ All settings via environment variables:
 - **Hotkey handling**: pynput keyboard listener with manual key combination tracking
 - **Audio**: Records at device's native sample rate, resamples to 16000Hz for API
 - **Clipboard**: Uses pyperclip (requires `xclip` system package)
-- **Whisper**: Lazy-loaded only when Groq fails (saves memory/startup time)
+- **Whisper**: Optional fallback, lazy-loaded only when Groq fails (install with `--with-whisper`)
 
 ## GUI Panel States
 
@@ -152,4 +158,9 @@ Vertical panel with 3 circular buttons (dark transparent background):
 **Configuration**:
 - `config.py` - Configuration (constants)
 - `settings.py` - Persistent settings & translations
-- `requirements.txt` - Python dependencies
+- `requirements.txt` - Python dependencies (without Whisper)
+- `requirements-full.txt` - Full dependencies (with Whisper)
+
+**Build**:
+- `build_portable.py` - Cross-platform PyInstaller build script
+- `AudioTranscribe.spec` - PyInstaller configuration

@@ -9,9 +9,6 @@ pynput>=1.7.6
 # Groq API
 httpx>=0.27.0
 
-# Whisper fallback (local)
-openai-whisper>=20231117
-
 # CLI utilities
 python-dotenv>=1.0.0
 rich>=13.0.0

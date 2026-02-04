@@ -194,8 +194,10 @@ class TranscriptionController:
                         import pyperclip
                         pyperclip.copy(text)
                         self._emit_status("Copiado al portapapeles")
-                    except Exception:
-                        pass
+                    except ImportError:
+                        self._emit_status("Texto transcrito (pyperclip no instalado)")
+                    except Exception as e:
+                        self._emit_status(f"Texto transcrito (portapapeles no disponible: {e})")
 
                 self.state = TranscriptionState.IDLE
                 if self.on_transcription_complete:
