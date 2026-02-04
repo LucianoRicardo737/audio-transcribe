@@ -10,7 +10,7 @@ from typing import Optional
 from PySide6.QtWidgets import (
     QApplication, QWidget, QMenu, QDialog, QVBoxLayout,
     QHBoxLayout, QLabel, QListWidget, QPushButton, QListWidgetItem,
-    QComboBox, QGroupBox, QFormLayout, QMessageBox
+    QComboBox, QGroupBox, QFormLayout, QMessageBox, QLineEdit
 )
 from PySide6.QtCore import (
     Qt, QPoint, QTimer, QSize, QPropertyAnimation,
@@ -23,7 +23,7 @@ from PySide6.QtGui import (
 import qtawesome as qta
 
 from transcription_controller import TranscriptionController, TranscriptionState
-from config import BUTTON_SIZE, BUTTON_POSITION, GROQ_MODEL
+from config import BUTTON_SIZE, BUTTON_POSITION, GROQ_MODEL, GROQ_API_KEY
 from settings import get_settings, update_settings, get_text, TRANSLATIONS
 
 
@@ -54,14 +54,24 @@ COLORS = {
 }
 
 
+SIZE_PRESETS = {
+    "mini": 36,
+    "small": 44,
+    "normal": 50,
+    "large": 64,
+    "xlarge": 80,
+}
+
+
 class CircularButton(QWidget):
     """A single circular button."""
 
     clicked = Signal()
 
-    def __init__(self, icon_name: str, color: QColor, parent=None):
+    def __init__(self, icon_name: str, color: QColor, parent=None, size=BTN_SIZE):
         super().__init__(parent)
-        self.setFixedSize(BTN_SIZE, BTN_SIZE)
+        self._btn_size = size
+        self.setFixedSize(self._btn_size, self._btn_size)
         self.setCursor(Qt.PointingHandCursor)
 
         self._icon_name = icon_name
@@ -84,7 +94,8 @@ class CircularButton(QWidget):
 
     def _update_icon(self):
         """Update the icon pixmap."""
-        icon_size = QSize(24, 24)
+        s = int(self._btn_size * 0.48)
+        icon_size = QSize(s, s)
         self._icon_pixmap = qta.icon(self._icon_name, color='white').pixmap(icon_size)
 
     def set_icon(self, icon_name: str):
@@ -142,13 +153,20 @@ class CircularButton(QWidget):
             self._spin_angle = (self._spin_angle + 10) % 360
         self.update()
 
+    def set_btn_size(self, size: int):
+        """Update button size dynamically."""
+        self._btn_size = size
+        self.setFixedSize(size, size)
+        self._update_icon()
+        self.update()
+
     def paintEvent(self, event):
         """Draw the circular button."""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        center = BTN_SIZE / 2
-        radius = (BTN_SIZE / 2 - 2) * self._scale
+        center = self._btn_size / 2
+        radius = (self._btn_size / 2 - 2) * self._scale
 
         # Determine color
         if not self._is_enabled:
@@ -183,7 +201,7 @@ class CircularButton(QWidget):
         )
 
         # Draw icon
-        icon_size = int(20 * self._scale)
+        icon_size = int(self._btn_size * 0.4 * self._scale)
         scaled_pixmap = self._icon_pixmap.scaled(
             icon_size, icon_size,
             Qt.KeepAspectRatio,
@@ -316,12 +334,11 @@ class FloatingPanel(QWidget):
         )
         self.setAttribute(Qt.WA_TranslucentBackground)
 
-        # Calculate panel size (3 main buttons + 1 row of 3 small buttons)
-        panel_width = BTN_SIZE + PANEL_PADDING * 2
-        panel_height = (BTN_SIZE * 3 + PANEL_SPACING * 2 +  # Main buttons
-                       PANEL_SPACING + SMALL_BTN_SIZE +      # Small buttons row
-                       PANEL_PADDING * 2)
-        self.setFixedSize(panel_width, panel_height)
+        # Read layout settings
+        settings = get_settings()
+        size_key = settings.get("button_size", "normal")
+        self._btn_size = SIZE_PRESETS.get(size_key, SIZE_PRESETS["normal"])
+        self._orientation = settings.get("orientation", "vertical")
 
         # State
         self._state = TranscriptionState.IDLE
@@ -333,10 +350,11 @@ class FloatingPanel(QWidget):
         # Controller
         self.controller: Optional[TranscriptionController] = None
 
-        # Create buttons
+        # Create buttons (without positioning)
         self._create_buttons()
 
-        # Position window
+        # Layout and position
+        self._layout_panel()
         self._position_window()
 
         # Context menu
@@ -348,46 +366,98 @@ class FloatingPanel(QWidget):
         self.transcription_errored.connect(self._handle_transcription_error)
 
     def _create_buttons(self):
-        """Create the control buttons."""
+        """Create the control buttons (without positioning)."""
         # Record/Stop button
-        self.btn_record = CircularButton('mdi.microphone', COLORS['idle'], self)
-        self.btn_record.move(PANEL_PADDING, PANEL_PADDING)
+        self.btn_record = CircularButton('mdi.microphone', COLORS['idle'], self, size=self._btn_size)
         self.btn_record.clicked.connect(self._on_record_click)
 
         # Pause/Resume button
-        self.btn_pause = CircularButton('mdi.pause', COLORS['paused'], self)
-        self.btn_pause.move(PANEL_PADDING, PANEL_PADDING + BTN_SIZE + PANEL_SPACING)
+        self.btn_pause = CircularButton('mdi.pause', COLORS['paused'], self, size=self._btn_size)
         self.btn_pause.clicked.connect(self._on_pause_click)
         self.btn_pause.set_enabled(False)
 
         # Cancel button
-        self.btn_cancel = CircularButton('mdi.close', COLORS['cancel'], self)
-        self.btn_cancel.move(PANEL_PADDING, PANEL_PADDING + (BTN_SIZE + PANEL_SPACING) * 2)
+        self.btn_cancel = CircularButton('mdi.close', COLORS['cancel'], self, size=self._btn_size)
         self.btn_cancel.clicked.connect(self._on_cancel_click)
         self.btn_cancel.set_enabled(False)
-
-        # Small utility buttons row
-        small_row_y = PANEL_PADDING + (BTN_SIZE + PANEL_SPACING) * 3
-        small_total_width = SMALL_BTN_SIZE * 3 + SMALL_BTN_SPACING * 2
-        small_start_x = PANEL_PADDING + (BTN_SIZE - small_total_width) // 2
 
         settings = get_settings()
         lang = settings.get("language", "es")
 
         # Help button
         self.btn_help = SmallButton('mdi.help', get_text("tooltip_help", lang), self)
-        self.btn_help.move(small_start_x, small_row_y)
         self.btn_help.clicked.connect(self._show_help)
 
-        # Settings button (microphone selection)
+        # Settings button
         self.btn_settings = SmallButton('mdi.cog', get_text("tooltip_settings", lang), self)
-        self.btn_settings.move(small_start_x + SMALL_BTN_SIZE + SMALL_BTN_SPACING, small_row_y)
         self.btn_settings.clicked.connect(self._show_device_selector)
 
         # Exit button
         self.btn_exit = SmallButton('mdi.exit-to-app', get_text("tooltip_exit", lang), self)
-        self.btn_exit.move(small_start_x + (SMALL_BTN_SIZE + SMALL_BTN_SPACING) * 2, small_row_y)
         self.btn_exit.clicked.connect(QApplication.quit)
+
+    def _layout_panel(self):
+        """Calculate dimensions and position all buttons based on orientation."""
+        btn = self._btn_size
+        sp = PANEL_SPACING
+        pad = PANEL_PADDING
+        small_total_width = SMALL_BTN_SIZE * 3 + SMALL_BTN_SPACING * 2
+
+        if self._orientation == "horizontal":
+            # Horizontal: main buttons in a row, utility buttons below centered
+            main_row_width = btn * 3 + sp * 2
+            content_width = max(main_row_width, small_total_width)
+            panel_width = content_width + pad * 2
+            panel_height = btn + sp + SMALL_BTN_SIZE + pad * 2
+            self.setFixedSize(panel_width, panel_height)
+
+            # Main buttons in row, centered
+            main_start_x = pad + (content_width - main_row_width) // 2
+            self.btn_record.move(main_start_x, pad)
+            self.btn_pause.move(main_start_x + btn + sp, pad)
+            self.btn_cancel.move(main_start_x + (btn + sp) * 2, pad)
+
+            # Utility buttons row below, centered
+            small_row_y = pad + btn + sp
+            small_start_x = pad + (content_width - small_total_width) // 2
+            self.btn_help.move(small_start_x, small_row_y)
+            self.btn_settings.move(small_start_x + SMALL_BTN_SIZE + SMALL_BTN_SPACING, small_row_y)
+            self.btn_exit.move(small_start_x + (SMALL_BTN_SIZE + SMALL_BTN_SPACING) * 2, small_row_y)
+        else:
+            # Vertical: main buttons stacked, utility row below
+            content_width = max(btn, small_total_width)
+            panel_width = content_width + pad * 2
+            panel_height = btn * 3 + sp * 2 + sp + SMALL_BTN_SIZE + pad * 2
+            self.setFixedSize(panel_width, panel_height)
+
+            # Center main buttons horizontally
+            btn_x = pad + (content_width - btn) // 2
+            self.btn_record.move(btn_x, pad)
+            self.btn_pause.move(btn_x, pad + btn + sp)
+            self.btn_cancel.move(btn_x, pad + (btn + sp) * 2)
+
+            # Utility buttons row centered below
+            small_row_y = pad + (btn + sp) * 3
+            small_start_x = pad + (content_width - small_total_width) // 2
+            self.btn_help.move(small_start_x, small_row_y)
+            self.btn_settings.move(small_start_x + SMALL_BTN_SIZE + SMALL_BTN_SPACING, small_row_y)
+            self.btn_exit.move(small_start_x + (SMALL_BTN_SIZE + SMALL_BTN_SPACING) * 2, small_row_y)
+
+    def _apply_layout_settings(self):
+        """Apply new layout settings (called after settings change)."""
+        settings = get_settings()
+        size_key = settings.get("button_size", "normal")
+        self._btn_size = SIZE_PRESETS.get(size_key, SIZE_PRESETS["normal"])
+        self._orientation = settings.get("orientation", "vertical")
+
+        # Update button sizes
+        self.btn_record.set_btn_size(self._btn_size)
+        self.btn_pause.set_btn_size(self._btn_size)
+        self.btn_cancel.set_btn_size(self._btn_size)
+
+        # Re-layout and reposition
+        self._layout_panel()
+        self._position_window()
 
     def _update_tooltips(self):
         """Update button tooltips with current language."""
@@ -626,6 +696,7 @@ class FloatingPanel(QWidget):
         dialog = SettingsDialog(devices, current_device_id, current_language, self)
         if dialog.exec() == QDialog.Accepted:
             changed = False
+            layout_changed = False
 
             if dialog.selected_device_id is not None and dialog.selected_device_id != current_device_id:
                 self.controller.select_device(dialog.selected_device_id)
@@ -635,9 +706,28 @@ class FloatingPanel(QWidget):
             if dialog.selected_language and dialog.selected_language != current_language:
                 self.controller.set_language(dialog.selected_language)
                 update_settings(language=dialog.selected_language)
-                # Update tooltips with new language
                 self._update_tooltips()
                 changed = True
+
+            current_api_key = settings.get("groq_api_key", "")
+            if dialog.selected_api_key is not None and dialog.selected_api_key != current_api_key:
+                update_settings(groq_api_key=dialog.selected_api_key)
+                changed = True
+
+            current_btn_size = settings.get("button_size", "normal")
+            if dialog.selected_button_size and dialog.selected_button_size != current_btn_size:
+                update_settings(button_size=dialog.selected_button_size)
+                changed = True
+                layout_changed = True
+
+            current_orient = settings.get("orientation", "vertical")
+            if dialog.selected_orientation and dialog.selected_orientation != current_orient:
+                update_settings(orientation=dialog.selected_orientation)
+                changed = True
+                layout_changed = True
+
+            if layout_changed:
+                self._apply_layout_settings()
 
             if changed:
                 t = lambda key: get_text(key, dialog.selected_language)
@@ -648,19 +738,34 @@ class FloatingPanel(QWidget):
                 )
 
     def show_initial_device_selector(self) -> bool:
-        """Show initial device selection. Returns True if device selected."""
+        """Show initial device selection. Returns True if device selected.
+
+        Uses saved device_id from settings if still available.
+        Only shows dialog on first run or if saved device is missing.
+        """
         devices = self.controller.get_available_devices()
         if not devices:
             return False
 
+        # Check if we have a saved device that is still available
+        settings = get_settings()
+        saved_device_id = settings.get("device_id")
+        if saved_device_id is not None:
+            available_ids = [d['id'] for d in devices]
+            if saved_device_id in available_ids:
+                self.controller.select_device(saved_device_id)
+                return True
+
         # Auto-select if only one device
         if len(devices) == 1:
             self.controller.select_device(devices[0]['id'])
+            update_settings(device_id=devices[0]['id'])
             return True
 
         dialog = DeviceDialog(devices, None, self, initial=True)
         if dialog.exec() == QDialog.Accepted and dialog.selected_device_id is not None:
             self.controller.select_device(dialog.selected_device_id)
+            update_settings(device_id=dialog.selected_device_id)
             return True
         return False
 
@@ -742,7 +847,7 @@ LANGUAGES = [
 
 
 class SettingsDialog(QDialog):
-    """Settings dialog for microphone and language selection."""
+    """Settings dialog for microphone, language and API key."""
 
     def __init__(self, devices, current_device_id, current_language, parent=None):
         super().__init__(parent)
@@ -750,15 +855,47 @@ class SettingsDialog(QDialog):
         t = lambda key: get_text(key, current_language)
 
         self.setWindowTitle(t("settings_title"))
-        self.setFixedSize(360, 280)
+        self.setFixedSize(360, 560)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         self.selected_device_id = current_device_id
         self.selected_language = current_language
+        self.selected_api_key = None
+        self.selected_button_size = None
+        self.selected_orientation = None
+
+        settings = get_settings()
 
         layout = QVBoxLayout(self)
-        layout.setSpacing(16)
+        layout.setSpacing(12)
         layout.setContentsMargins(20, 20, 20, 20)
+
+        # API Key section
+        api_group = QGroupBox(t("settings_api_key"))
+        api_layout = QVBoxLayout(api_group)
+
+        self.api_key_input = QLineEdit()
+        self.api_key_input.setEchoMode(QLineEdit.Password)
+        self.api_key_input.setPlaceholderText(t("settings_api_key_hint"))
+        self.api_key_input.setStyleSheet("QLineEdit { padding: 6px; }")
+        current_key = settings.get("groq_api_key", "") or GROQ_API_KEY
+        if current_key:
+            self.api_key_input.setText(current_key)
+        api_layout.addWidget(self.api_key_input)
+
+        # Toggle visibility button
+        self.show_key_btn = QPushButton("👁")
+        self.show_key_btn.setFixedWidth(32)
+        self.show_key_btn.setCheckable(True)
+        self.show_key_btn.setStyleSheet("QPushButton { border: none; font-size: 14px; }")
+        self.show_key_btn.toggled.connect(self._toggle_key_visibility)
+
+        key_row = QHBoxLayout()
+        key_row.addStretch()
+        key_row.addWidget(self.show_key_btn)
+        api_layout.addLayout(key_row)
+
+        layout.addWidget(api_group)
 
         # Microphone section
         mic_group = QGroupBox(t("settings_microphone"))
@@ -797,6 +934,47 @@ class SettingsDialog(QDialog):
         lang_layout.addWidget(self.lang_combo)
         layout.addWidget(lang_group)
 
+        # Appearance section
+        appearance_group = QGroupBox(t("settings_appearance"))
+        appearance_layout = QFormLayout(appearance_group)
+
+        # Button size combo
+        self.size_combo = QComboBox()
+        self.size_combo.setStyleSheet("QComboBox { padding: 6px; }")
+        size_options = [
+            ("mini", t("size_mini")),
+            ("small", t("size_small")),
+            ("normal", t("size_normal")),
+            ("large", t("size_large")),
+            ("xlarge", t("size_xlarge")),
+        ]
+        current_size = settings.get("button_size", "normal")
+        current_size_idx = 0
+        for i, (key, label) in enumerate(size_options):
+            self.size_combo.addItem(label, key)
+            if key == current_size:
+                current_size_idx = i
+        self.size_combo.setCurrentIndex(current_size_idx)
+        appearance_layout.addRow(t("settings_button_size"), self.size_combo)
+
+        # Orientation combo
+        self.orientation_combo = QComboBox()
+        self.orientation_combo.setStyleSheet("QComboBox { padding: 6px; }")
+        orientation_options = [
+            ("vertical", t("orientation_vertical")),
+            ("horizontal", t("orientation_horizontal")),
+        ]
+        current_orientation = settings.get("orientation", "vertical")
+        current_orientation_idx = 0
+        for i, (key, label) in enumerate(orientation_options):
+            self.orientation_combo.addItem(label, key)
+            if key == current_orientation:
+                current_orientation_idx = i
+        self.orientation_combo.setCurrentIndex(current_orientation_idx)
+        appearance_layout.addRow(t("settings_orientation"), self.orientation_combo)
+
+        layout.addWidget(appearance_group)
+
         layout.addStretch()
 
         # Buttons
@@ -824,10 +1002,26 @@ class SettingsDialog(QDialog):
 
         layout.addLayout(btn_layout)
 
+        # Center on screen
+        screen = QApplication.primaryScreen().geometry()
+        self.move(
+            (screen.width() - self.width()) // 2,
+            (screen.height() - self.height()) // 2,
+        )
+
+    def _toggle_key_visibility(self, checked):
+        """Toggle API key visibility."""
+        self.api_key_input.setEchoMode(
+            QLineEdit.Normal if checked else QLineEdit.Password
+        )
+
     def _on_accept(self):
         """Save selections."""
         self.selected_device_id = self.mic_combo.currentData()
         self.selected_language = self.lang_combo.currentData()
+        self.selected_api_key = self.api_key_input.text().strip()
+        self.selected_button_size = self.size_combo.currentData()
+        self.selected_orientation = self.orientation_combo.currentData()
         self.accept()
 
 
@@ -939,6 +1133,84 @@ class DeviceDialog(QDialog):
         self.accept()
 
 
+class ApiKeyDialog(QDialog):
+    """Dialog to configure Groq API key on first run."""
+
+    def __init__(self, lang="es", parent=None):
+        super().__init__(parent)
+        t = lambda key: get_text(key, lang)
+
+        self.setWindowTitle(t("settings_api_key"))
+        self.setFixedSize(400, 220)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+
+        self.api_key = ""
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(12)
+        layout.setContentsMargins(24, 24, 24, 24)
+
+        # Title
+        title = QLabel(t("help_app_title"))
+        title.setFont(QFont("", 14, QFont.Bold))
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+
+        # Instruction
+        hint = QLabel(t("settings_api_key_hint"))
+        hint.setAlignment(Qt.AlignCenter)
+        hint.setStyleSheet("color: #888;")
+        hint.setOpenExternalLinks(True)
+        layout.addWidget(hint)
+
+        layout.addSpacing(4)
+
+        # API key input
+        self.api_key_input = QLineEdit()
+        self.api_key_input.setPlaceholderText("gsk_...")
+        self.api_key_input.setStyleSheet("QLineEdit { padding: 8px; font-size: 13px; }")
+        layout.addWidget(self.api_key_input)
+
+        layout.addStretch()
+
+        # Buttons
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+
+        cancel_btn = QPushButton(t("settings_cancel"))
+        cancel_btn.clicked.connect(self.reject)
+        btn_layout.addWidget(cancel_btn)
+
+        ok_btn = QPushButton(t("settings_save"))
+        ok_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 8px 20px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover { background-color: #45a049; }
+        """)
+        ok_btn.clicked.connect(self._on_accept)
+        btn_layout.addWidget(ok_btn)
+
+        layout.addLayout(btn_layout)
+
+    def _on_accept(self):
+        key = self.api_key_input.text().strip()
+        if key:
+            self.api_key = key
+            self.accept()
+
+
+def _has_api_key() -> bool:
+    """Check if a Groq API key is available from settings or env var."""
+    saved = get_settings().get("groq_api_key", "")
+    return bool(saved) or bool(GROQ_API_KEY)
+
+
 def main():
     """Entry point."""
     app = QApplication(sys.argv)
@@ -947,6 +1219,14 @@ def main():
     # Load saved settings
     settings = get_settings()
     saved_language = settings.get("language", "es")
+
+    # Ask for API key if not configured anywhere
+    if not _has_api_key():
+        dialog = ApiKeyDialog(saved_language)
+        if dialog.exec() == QDialog.Accepted and dialog.api_key:
+            update_settings(groq_api_key=dialog.api_key)
+        else:
+            return 1
 
     # Create panel
     panel = FloatingPanel()
